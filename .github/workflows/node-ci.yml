@@ -1,4 +1,3 @@
-
 name: Node CI
 
 on:
@@ -17,26 +16,28 @@ jobs:
           - 6379:6379
         options: >-
           --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Use Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: 'npm'        # caches node_modules/npm cache automatically
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build
         run: npm run build
 
       - name: Start server in background
-        # start the compiled server in background so we can curl a health endpoint
         run: |
           node dist/index.js & 
           echo "server started"
+
       - name: Wait for server
         run: |
           for i in {1..10}; do
@@ -54,5 +55,4 @@ jobs:
 
       - name: Smoke test external endpoint through app
         run: |
-          # try fetch user id 1 via the app (this will use jsonplaceholder and cache the result)
           curl --fail --silent --show-error http://127.0.0.1:3000/api/users/1 | jq
